@@ -70,8 +70,29 @@ const rakuten = async () => {
         console.log(error);
         return;
     });
+};
 
-
+const fanza = async () => {
+    // var random = Math.floor(Math.random() * 20) + 1;
+    var requestUrl = "https://api.dmm.com/affiliate/v3/ItemList?api_id=" + process.env.FANZA_API_ID
+        + "&affiliate_id=" + process.env.FANZA_AFFILIATE_ID + "&site=FANZA&service=digital&floor=videoa&output=json";
+    console.log(requestUrl);
+    await axios.get(requestUrl, {
+    }).then(async (response) => {
+        if (response.status !== 201) {
+            var randomNo = Math.floor(Math.random() * (response.data.result.items.length));
+            var title = response.data.result.items[randomNo].title;
+            var affiliateURL = rresponse.data.result.items[randomNo].affiliateURL;
+            console.log(title);
+            console.log(affiliateURL);
+            var tweetText = title + catchcopy
+            client.v2.tweet(tweetText.substring(0, 90) + " " + affiliateUrl + " #Fanza #av #エロ #アダルト");
+            console.log("完了");
+        }
+    }).catch((error) => {
+        console.log(error);
+        return;
+    });
 };
 
 app.get("/tiktok4500", (req, res) => {
@@ -140,6 +161,15 @@ app.get("/daiwa", (req, res) => {
 app.get("/olive", (req, res) => {
     try {
         execute(process.env.OLIVE_API_URL);
+    } catch (err) {
+        console.log(err);
+    }
+    res.send('get');
+});
+
+app.get("/fanza", (req, res) => {
+    try {
+        fanza();
     } catch (err) {
         console.log(err);
     }
