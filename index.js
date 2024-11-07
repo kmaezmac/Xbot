@@ -85,8 +85,7 @@ const fanza = async () => {
             var affiliateURL = response.data.result.items[randomNo].affiliateURL;
             console.log(title);
             console.log(affiliateURL);
-            var tweetText = title + catchcopy
-            client.v2.tweet(tweetText.substring(0, 90) + " " + affiliateUrl + " #Fanza #av #エロ #アダルト");
+            client.v2.tweet(title.substring(0, 90) + " " + affiliateURL + " #Fanza #av #エロ #アダルト");
             console.log("完了");
         }
     }).catch((error) => {
