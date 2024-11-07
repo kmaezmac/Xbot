@@ -82,7 +82,7 @@ const fanza = async () => {
         if (response.status !== 201) {
             var randomNo = Math.floor(Math.random() * (response.data.result.items.length));
             var title = response.data.result.items[randomNo].title;
-            var affiliateURL = rresponse.data.result.items[randomNo].affiliateURL;
+            var affiliateURL = response.data.result.items[randomNo].affiliateURL;
             console.log(title);
             console.log(affiliateURL);
             var tweetText = title + catchcopy
