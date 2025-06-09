@@ -1,13 +1,8 @@
-import express from "express";
 import { TwitterApi } from "twitter-api-v2";
-import process from "process";
-import pg from 'pg';
 import https from 'https';
 import axios from "axios";
 
-// consumer keys - api key
 const appKey = process.env.TWITTER_API_KEY;
-// consumer keys - api key secret
 const appSecret = process.env.TWITTER_API_SECRET;
 const accessToken = process.env.TWITTER_ACCESS_TOKEN;
 const accessSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET;
@@ -19,170 +14,101 @@ const client = new TwitterApi({
     accessSecret,
 });
 client.readWrite;
-const app = express();
 
 const execute = async (url) => {
-    https.get(url, (resp) =>{
-        let data = ''; 
-        resp.on('data', (chunk) => { 
-            data += chunk; 
-        }); 
-        resp.on('end', () => {
-            var body = JSON.parse(data)
-            var tweetText = body.tweetText;
-            client.v2.tweet(tweetText);
-            return true;
-        }); 
-    
-    }).on("error", (err) => { 
-        console.log("Error: " + err.message); 
-        return false;
-    })
+    return new Promise((resolve, reject) => {
+        https.get(url, (resp) => {
+            let data = '';
+            resp.on('data', (chunk) => {
+                data += chunk;
+            });
+            resp.on('end', () => {
+                try {
+                    var body = JSON.parse(data)
+                    var tweetText = body.tweetText;
+                    client.v2.tweet(tweetText);
+                    resolve(true);
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }).on("error", (err) => {
+            reject(err);
+        });
+    });
 };
 
 const rakuten = async () => {
-    var args = [
-        20,
-        30,
-        40
-    ]
+    var args = [20, 30, 40];
     var age = args[Math.floor(Math.random() * args.length)];
     var random = Math.floor(Math.random() * 34) + 1;
     var requestUrl = "https://app.rakuten.co.jp/services/api/IchibaItem/Ranking/20220601?applicationId=" + process.env.RAKUTEN_APP_ID
         + "&age=" + age + "&sex=1&carrier=0&page=" + random + "&affiliateId=" + process.env.RAKUTEN_AFFILIATE_ID;
     console.log(requestUrl);
-    await axios.get(requestUrl, {
-    }).then(async (response) => {
+    try {
+        const response = await axios.get(requestUrl);
         if (response.status !== 201) {
             var randomNo = Math.floor(Math.random() * (response.data.Items.length));
             var itemName = response.data.Items[randomNo].Item.itemName;
             var catchcopy = response.data.Items[randomNo].Item.catchcopy;
             var affiliateUrl = response.data.Items[randomNo].Item.affiliateUrl;
-            console.log(itemName);
-            console.log(catchcopy);
-            console.log(affiliateUrl);
-            var tweetText = itemName + catchcopy
-            client.v2.tweet(tweetText.substring(0, 90) + " " + affiliateUrl + " #楽天ROOM #楽天 #楽天市場 #ad #PR");
+            var tweetText = itemName + catchcopy;
+            await client.v2.tweet(tweetText.substring(0, 90) + " " + affiliateUrl + " #楽天ROOM #楽天 #楽天市場 #ad #PR");
             console.log("完了");
-
         }
-    }).catch((error) => {
+    } catch (error) {
         console.log(error);
-        return;
-    });
+    }
 };
 
 const fanza = async () => {
-    // var random = Math.floor(Math.random() * 20) + 1;
     var requestUrl = "https://api.dmm.com/affiliate/v3/ItemList?api_id=" + process.env.FANZA_API_ID
         + "&affiliate_id=" + process.env.FANZA_AFFILIATE_ID + "&site=FANZA&service=digital&floor=videoa&output=json";
     console.log(requestUrl);
-    await axios.get(requestUrl, {
-    }).then(async (response) => {
+    try {
+        const response = await axios.get(requestUrl);
         if (response.status !== 201) {
             var randomNo = Math.floor(Math.random() * (response.data.result.items.length));
             var title = response.data.result.items[randomNo].title;
             var affiliateURL = response.data.result.items[randomNo].affiliateURL;
-            console.log(title);
-            console.log(affiliateURL);
-            client.v2.tweet(title.substring(0, 90) + " " + affiliateURL + " #Fanza #av #エロ #アダルト");
+            await client.v2.tweet(title.substring(0, 90) + " " + affiliateURL + " #Fanza #av #エロ #アダルト");
             console.log("完了");
         }
-    }).catch((error) => {
+    } catch (error) {
         console.log(error);
-        return;
-    });
+    }
 };
 
-app.get("/tiktok4500", (req, res) => {
+export default async function handler(req, res) {
+    const { pathname } = new URL(req.url, `http://${req.headers.host}`);
     try {
-        execute(process.env.TIKTOK_4500_API_URL);
+        if (pathname === "/api/tiktok4500") {
+            await execute(process.env.TIKTOK_4500_API_URL);
+        } else if (pathname === "/api/tiktok5000") {
+            await execute(process.env.TIKTOK_5000_API_URL);
+        } else if (pathname === "/api/amazon") {
+            await execute(process.env.AMAZON_API_URL);
+        } else if (pathname === "/api/rakuten") {
+            await rakuten();
+        } else if (pathname === "/api/moppy") {
+            await execute(process.env.MOPPY_API_URL);
+        } else if (pathname === "/api/mercari") {
+            await execute(process.env.MERCARI_API_URL);
+        } else if (pathname === "/api/daiwa") {
+            await execute(process.env.DAIWA_API_URL);
+        } else if (pathname === "/api/olive") {
+            await execute(process.env.OLIVE_API_URL);
+        } else if (pathname === "/api/fanza") {
+            await fanza();
+        } else if (pathname === "/api/" || pathname === "/api") {
+            console.log("ログ定期実行");
+        } else {
+            res.status(404).send('Not found');
+            return;
+        }
+        res.status(200).send('get');
     } catch (err) {
         console.log(err);
+        res.status(500).send('error');
     }
-    res.send('get');
-});
-
-app.get("/tiktok5000", (req, res) => {
-    try {
-        execute(process.env.TIKTOK_5000_API_URL);
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/amazon", (req, res) => {
-    try {
-        execute(process.env.AMAZON_API_URL);
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/rakuten", (req, res) => {
-    try {
-        rakuten();
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/moppy", (req, res) => {
-    try {
-        execute(process.env.MOPPY_API_URL);
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/mercari", (req, res) => {
-    try {
-        execute(process.env.MERCARI_API_URL);
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/daiwa", (req, res) => {
-    try {
-        execute(process.env.DAIWA_API_URL);
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/olive", (req, res) => {
-    try {
-        execute(process.env.OLIVE_API_URL);
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/fanza", (req, res) => {
-    try {
-        fanza();
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-app.get("/", (req, res) => {
-    try {
-        console.log("ログ定期実行")
-    } catch (err) {
-        console.log(err);
-    }
-    res.send('get');
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT);
+}
