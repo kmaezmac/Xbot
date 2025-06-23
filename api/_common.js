@@ -26,6 +26,7 @@ export const execute = async (url) => {
                 try {
                     var body = JSON.parse(data)
                     var tweetText = body.tweetText;
+                    console.log(tweetText);
                     client.v2.tweet(tweetText);
                     resolve(true);
                 } catch (e) {
