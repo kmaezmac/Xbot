@@ -14,7 +14,7 @@ export default async function handler(req, res) {
             {
                 headers: {
                     'Authorization': `Bearer ${process.env.RAKUTEN_APP_ACCESS_KEY}`,
-                    'Origin': 'https://openapi.rakuten.co.jp/'
+                    'Origin': 'https://xbot-phi.vercel.app'
                 }
             }
         );
