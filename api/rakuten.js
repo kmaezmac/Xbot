@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     var age = args[Math.floor(Math.random() * args.length)];
     var random = Math.floor(Math.random() * 34) + 1;
     var requestUrl = "https://openapi.rakuten.co.jp/ichibaranking/api/IchibaItem/Ranking/20220601?applicationId=" + process.env.RAKUTEN_APP_ID
-        + "&age=" + age + "&sex=1&carrier=0&page=" + random + "&accessKey=" + process.env.RAKUTEN_APP_ACCESS_KEY
+        + "&age=" + age + "&sex=1&carrier=0&page=" + random + "&accessKey=" + process.env.RAKUTEN_APP_ACCESS_KEY + "&affiliateId=" + process.env.RAKUTEN_AFFILIATE_ID;
     console.log("[rakuten] requestUrl:", requestUrl);
     console.log("[rakuten] RAKUTEN_APP_ID exists:", !!process.env.RAKUTEN_APP_ID);
     console.log("[rakuten] RAKUTEN_APP_ACCESS_KEY exists:", !!process.env.RAKUTEN_APP_ACCESS_KEY);
