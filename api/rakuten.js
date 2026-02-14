@@ -10,7 +10,7 @@ export default async function handler(req, res) {
         const response = await axios.get(requestUrl,
             {
                 headers: {
-                    'Authorization': 'Bearer ' + process.env.RAKUTEN_APP_ACCESS_KEY,
+                    'Authorization': `Bearer ${process.env.RAKUTEN_APP_ACCESS_KEY}`
                 }
             }
         );
