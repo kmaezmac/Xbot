@@ -76,7 +76,7 @@ export const callOpenAI = async (userText) => {
         }
     );
     console.log("[openai] response data:", JSON.stringify(response.data));
-    const text = response.data.output[0].content[0].text;
+    const text = response.data.output[1].content[0].text;
     return text;
 };
 
