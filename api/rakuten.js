@@ -1,22 +1,12 @@
 import { client, axios, callOpenAI, tweetThreadWithBearer } from "./_common.js";
 
-const OPENAI_PROMPT_TEMPLATE = (itemName, catchcopy) => `あなたは実際に商品を使った個人ユーザーです。
-AIっぽい文章や広告っぽい表現は禁止です。
-
-以下の商品情報をもとに、
-・140文字以内
-・絵文字は使わない
-・PR感を出さない
-・実際に使った感想として自然な口調
-・X（旧Twitter）用の投稿文
-・アフィリエイトリンクは本文に含めず「気になる人はリプに」などで誘導
-
-という条件でポストを1つ作成してください。
-
-商品名: ${itemName}
-キャッチコピー: ${catchcopy}
-
-投稿文のみを返してください。余計な説明は不要です。`;
+const OPENAI_USER_PROMPT = (itemName, catchcopy, rankingText) =>
+    `以下の商品情報をもとに、` +
+    `・140文字以内・絵文字は使わない・PR感を出さない・実際に使った感想として自然な口調・X（旧Twitter）用の投稿文` +
+    `・アフィリエイトリンクは本文に含めず「気になる人はリプに」などで誘導、` +
+    `という条件でポストを1つ作成してください。\n\n` +
+    `商品名: ${itemName}\nキャッチコピー: ${catchcopy}\nランキング情報: ${rankingText}\n\n` +
+    `投稿文のみを返してください。余計な説明は不要です。`;
 
 export default async function handler(req, res) {
     const mode = process.env.X_API_MODE || "legacy";
@@ -53,7 +43,8 @@ export default async function handler(req, res) {
             if (mode === "new") {
                 // --- 新方式: OpenAI生成 + スレッド投稿 ---
                 console.log("[rakuten][new] calling OpenAI...");
-                const aiText = await callOpenAI(OPENAI_PROMPT_TEMPLATE(itemName, catchcopy));
+                var rankingText = response.data.Items[randomNo].Item.itemCaption || "";
+                const aiText = await callOpenAI(OPENAI_USER_PROMPT(itemName, catchcopy, rankingText));
                 console.log("[rakuten][new] OpenAI response:", aiText);
 
                 // 選択アイテムから画像を取得（投稿1用）

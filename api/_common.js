@@ -42,12 +42,31 @@ export const execute = async (url) => {
 /**
  * OpenAI API (POST /v1/responses) を呼び出す
  */
-export const callOpenAI = async (prompt) => {
+export const callOpenAI = async (userText) => {
     const response = await axios.post(
         "https://api.openai.com/v1/responses",
         {
             model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-            input: prompt,
+            input: [
+                {
+                    role: "system",
+                    content: [
+                        {
+                            type: "text",
+                            text: "あなたは実際に商品を使った個人ユーザーです。AIっぽい文章や広告っぽい表現は禁止です。",
+                        },
+                    ],
+                },
+                {
+                    role: "user",
+                    content: [
+                        {
+                            type: "text",
+                            text: userText,
+                        },
+                    ],
+                },
+            ],
         },
         {
             headers: {
@@ -57,7 +76,6 @@ export const callOpenAI = async (prompt) => {
         }
     );
     console.log("[openai] response data:", JSON.stringify(response.data).substring(0, 500));
-    // Responses API: output_text or fallback to output[0].content[0].text
     const text = response.data.output_text
         ?? response.data.output?.[0]?.content?.[0]?.text
         ?? response.data.choices?.[0]?.message?.content;
