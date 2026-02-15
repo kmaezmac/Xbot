@@ -52,7 +52,7 @@ export const callOpenAI = async (userText) => {
                     role: "system",
                     content: [
                         {
-                            type: "text",
+                            type: "input_text",
                             text: "あなたは実際に商品を使った個人ユーザーです。AIっぽい文章や広告っぽい表現は禁止です。",
                         },
                     ],
@@ -61,7 +61,7 @@ export const callOpenAI = async (userText) => {
                     role: "user",
                     content: [
                         {
-                            type: "text",
+                            type: "input_text",
                             text: userText,
                         },
                     ],
