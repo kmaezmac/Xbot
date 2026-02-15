@@ -92,32 +92,59 @@ export const tweetThread = async (firstTweet, secondTweet) => {
 };
 
 /**
- * OAuth 2.0 User Context を使って X API v2 でツイートする
+ * OAuth 2.0 Client Credentials でアクセストークンを取得する
  */
-const oauthHeaders = {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${process.env.X_BEARER_TOKEN}`,
+const getOAuth2Token = async () => {
+    const res = await axios.post(
+        "https://api.x.com/oauth2/token",
+        "grant_type=client_credentials",
+        {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            auth: {
+                username: process.env.X_API_USERNAME,
+                password: process.env.X_API_APP_SECRET,
+            },
+        }
+    );
+    console.log("[oauth2] token obtained");
+    return res.data.access_token;
 };
 
 export const tweetWithOAuth2 = async (text) => {
+    const token = await getOAuth2Token();
     const res = await axios.post(
         "https://api.x.com/2/tweets",
         { text },
-        { headers: oauthHeaders }
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        }
     );
     console.log("[oauth2] tweet id:", res.data.data.id);
     return res.data;
 };
 
 export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet) => {
-    const first = await tweetWithOAuth2(firstTweet);
-    const res = await axios.post(
+    const token = await getOAuth2Token();
+    const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+    };
+    const first = await axios.post(
         "https://api.x.com/2/tweets",
-        { text: secondTweet, reply: { in_reply_to_tweet_id: first.data.id } },
-        { headers: oauthHeaders }
+        { text: firstTweet },
+        { headers }
     );
-    console.log("[oauth2] reply tweet id:", res.data.data.id);
-    return { first, second: res.data };
+    console.log("[oauth2] tweet id:", first.data.data.id);
+    const second = await axios.post(
+        "https://api.x.com/2/tweets",
+        { text: secondTweet, reply: { in_reply_to_tweet_id: first.data.data.id } },
+        { headers }
+    );
+    console.log("[oauth2] reply tweet id:", second.data.data.id);
+    return { first: first.data, second: second.data };
 };
 
 export { axios };
