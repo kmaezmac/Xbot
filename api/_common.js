@@ -1,6 +1,12 @@
 import { TwitterApi } from "twitter-api-v2";
 import https from 'https';
 import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+);
 
 export const appKey = process.env.TWITTER_API_KEY;
 export const appSecret = process.env.TWITTER_API_SECRET;
@@ -92,12 +98,35 @@ export const tweetThread = async (firstTweet, secondTweet) => {
 };
 
 /**
+ * 画像URLからダウンロードしてX APIにアップロードし、media_idを返す
+ * メディアアップロードはv1.1 (OAuth 1.0a) を使用
+ */
+export const uploadImageFromUrl = async (imageUrl) => {
+    const imgRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
+    const buffer = Buffer.from(imgRes.data);
+    console.log("[media] downloaded image, size:", buffer.length);
+    const mediaId = await client.v1.uploadMedia(buffer, { mimeType: "image/jpeg" });
+    console.log("[media] uploaded, media_id:", mediaId);
+    return mediaId;
+};
+
+/**
  * OAuth 2.0 refresh_token でアクセストークンを取得する
+ * リフレッシュトークンはSupabaseから取得し、新しいトークンを保存する
  */
 const getOAuth2Token = async () => {
+    // Supabaseからリフレッシュトークンを取得
+    const { data: row, error: fetchErr } = await supabase
+        .from("x_tokens")
+        .select("refresh_token")
+        .eq("id", 1)
+        .single();
+    if (fetchErr) throw new Error("[oauth2] supabase fetch error: " + fetchErr.message);
+    console.log("[oauth2] refresh_token loaded from supabase");
+
     const params = new URLSearchParams();
     params.append("grant_type", "refresh_token");
-    params.append("refresh_token", process.env.X_REFRESH_TOKEN);
+    params.append("refresh_token", row.refresh_token);
     params.append("client_id", process.env.X_CLIENT_ID);
     const res = await axios.post(
         "https://api.x.com/2/oauth2/token",
@@ -111,6 +140,17 @@ const getOAuth2Token = async () => {
         }
     );
     console.log("[oauth2] token obtained");
+
+    // 新しいリフレッシュトークンをSupabaseに保存
+    if (res.data.refresh_token) {
+        const { error: updateErr } = await supabase
+            .from("x_tokens")
+            .update({ refresh_token: res.data.refresh_token, updated_at: new Date().toISOString() })
+            .eq("id", 1);
+        if (updateErr) console.error("[oauth2] supabase update error:", updateErr.message);
+        else console.log("[oauth2] new refresh_token saved to supabase");
+    }
+
     return res.data.access_token;
 };
 
@@ -130,15 +170,19 @@ export const tweetWithOAuth2 = async (text) => {
     return res.data;
 };
 
-export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet) => {
+export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet, mediaIds) => {
     const token = await getOAuth2Token();
     const headers = {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
     };
+    const firstBody = { text: firstTweet };
+    if (mediaIds && mediaIds.length > 0) {
+        firstBody.media = { media_ids: mediaIds };
+    }
     const first = await axios.post(
         "https://api.x.com/2/tweets",
-        { text: firstTweet },
+        firstBody,
         { headers }
     );
     console.log("[oauth2] tweet id:", first.data.data.id);

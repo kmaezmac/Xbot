@@ -1,4 +1,4 @@
-import { client, axios, callOpenAI, tweetThreadWithOAuth2 } from "./_common.js";
+import { client, axios, callOpenAI, tweetThreadWithOAuth2, uploadImageFromUrl } from "./_common.js";
 
 const OPENAI_USER_PROMPT = (itemName, catchcopy, rankingText) =>
     `以下の商品情報をもとに、` +
@@ -52,10 +52,12 @@ export default async function handler(req, res) {
                 var imageUrl = (mediumImageUrls?.[0]?.imageUrl || "").replace(/\?_ex=\d+x\d+$/, "");
                 console.log("[rakuten][new] imageUrl:", imageUrl);
 
-                // 投稿1: AI生成テキスト + 画像URL
+                // 投稿1: AI生成テキスト + 画像添付
                 var firstTweet = aiText.substring(0, 140);
+                var mediaIds = [];
                 if (imageUrl) {
-                    firstTweet = aiText.substring(0, 130) + "\n" + imageUrl;
+                    const mediaId = await uploadImageFromUrl(imageUrl);
+                    mediaIds.push(mediaId);
                 }
                 console.log("[rakuten][new] firstTweet:", firstTweet);
 
@@ -64,7 +66,7 @@ export default async function handler(req, res) {
                 var secondTweet = tweetText.substring(0, 90) + " " + affiliateUrl + " #楽天ROOM #楽天 #楽天市場 #ad #PR";
                 console.log("[rakuten][new] secondTweet:", secondTweet);
 
-                await tweetThreadWithOAuth2(firstTweet, secondTweet);
+                await tweetThreadWithOAuth2(firstTweet, secondTweet, mediaIds);
                 console.log("[rakuten][new] thread posted successfully");
             } else {
                 // --- 旧方式: 従来通り単発投稿 ---
