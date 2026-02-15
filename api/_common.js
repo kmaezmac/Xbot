@@ -92,16 +92,20 @@ export const tweetThread = async (firstTweet, secondTweet) => {
 };
 
 /**
- * OAuth 2.0 Client Credentials でアクセストークンを取得する
+ * OAuth 2.0 refresh_token でアクセストークンを取得する
  */
 const getOAuth2Token = async () => {
+    const params = new URLSearchParams();
+    params.append("grant_type", "refresh_token");
+    params.append("refresh_token", process.env.X_REFRESH_TOKEN);
+    params.append("client_id", process.env.X_CLIENT_ID);
     const res = await axios.post(
-        "https://api.x.com/oauth2/token",
-        "grant_type=client_credentials",
+        "https://api.x.com/2/oauth2/token",
+        params,
         {
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             auth: {
-                username: process.env.X_API_USERNAME,
+                username: process.env.X_CLIENT_ID,
                 password: process.env.X_API_APP_SECRET,
             },
         }
