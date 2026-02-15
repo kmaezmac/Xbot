@@ -75,10 +75,8 @@ export const callOpenAI = async (userText) => {
             },
         }
     );
-    console.log("[openai] response data:", JSON.stringify(response.data).substring(0, 500));
-    const text = response.data.output_text
-        ?? response.data.output?.[0]?.content?.[0]?.text
-        ?? response.data.choices?.[0]?.message?.content;
+    console.log("[openai] response data:", JSON.stringify(response.data));
+    const text = response.data.output[0].content[0].text;
     return text;
 };
 
