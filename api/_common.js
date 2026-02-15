@@ -39,4 +39,64 @@ export const execute = async (url) => {
     });
 };
 
+/**
+ * OpenAI API (POST /v1/responses) を呼び出す
+ */
+export const callOpenAI = async (prompt) => {
+    const response = await axios.post(
+        "https://api.openai.com/v1/responses",
+        {
+            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+            input: prompt,
+        },
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+        }
+    );
+    return response.data.output_text;
+};
+
+/**
+ * スレッド形式で投稿する（投稿1 → 投稿1へのリプライとして投稿2）
+ */
+export const tweetThread = async (firstTweet, secondTweet) => {
+    const first = await client.v2.tweet(firstTweet);
+    console.log("[thread] first tweet id:", first.data.id);
+    const second = await client.v2.reply(secondTweet, first.data.id);
+    console.log("[thread] reply tweet id:", second.data.id);
+    return { first, second };
+};
+
+/**
+ * Bearer Token を使って X API v2 でツイートする
+ */
+const bearerHeaders = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${process.env.X_BEARER_TOKEN}`,
+};
+
+export const tweetWithBearer = async (text) => {
+    const res = await axios.post(
+        "https://api.x.com/2/tweets",
+        { text },
+        { headers: bearerHeaders }
+    );
+    console.log("[bearer] tweet id:", res.data.data.id);
+    return res.data;
+};
+
+export const tweetThreadWithBearer = async (firstTweet, secondTweet) => {
+    const first = await tweetWithBearer(firstTweet);
+    const res = await axios.post(
+        "https://api.x.com/2/tweets",
+        { text: secondTweet, reply: { in_reply_to_tweet_id: first.data.id } },
+        { headers: bearerHeaders }
+    );
+    console.log("[bearer] reply tweet id:", res.data.data.id);
+    return { first, second: res.data };
+};
+
 export { axios };
