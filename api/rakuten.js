@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 
                 // 選択アイテムから画像を取得（投稿1用）
                 var mediumImageUrls = response.data.Items[randomNo].Item.mediumImageUrls;
-                var imageUrl = mediumImageUrls?.[0]?.imageUrl || "";
+                var imageUrl = (mediumImageUrls?.[0]?.imageUrl || "").replace(/\?_ex=\d+x\d+$/, "");
                 console.log("[rakuten][new] imageUrl:", imageUrl);
 
                 // 投稿1: AI生成テキスト + 画像URL

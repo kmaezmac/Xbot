@@ -56,7 +56,12 @@ export const callOpenAI = async (prompt) => {
             },
         }
     );
-    return response.data.output_text;
+    console.log("[openai] response data:", JSON.stringify(response.data).substring(0, 500));
+    // Responses API: output_text or fallback to output[0].content[0].text
+    const text = response.data.output_text
+        ?? response.data.output?.[0]?.content?.[0]?.text
+        ?? response.data.choices?.[0]?.message?.content;
+    return text;
 };
 
 /**
