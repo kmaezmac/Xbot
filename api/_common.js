@@ -122,12 +122,14 @@ const getOAuth2Token = async () => {
         .eq("id", 1)
         .single();
     if (fetchErr) throw new Error("[oauth2] supabase fetch error: " + fetchErr.message);
-    console.log("[oauth2] refresh_token loaded from supabase");
+    console.log("[oauth2] refresh_token from supabase:", row.refresh_token);
 
     const params = new URLSearchParams();
     params.append("grant_type", "refresh_token");
     params.append("refresh_token", row.refresh_token);
     params.append("client_id", process.env.X_CLIENT_ID);
+    console.log("[oauth2] token request body:", params.toString());
+    console.log("[oauth2] token request auth:", { username: process.env.X_CLIENT_ID, password: process.env.X_API_APP_SECRET });
     const res = await axios.post(
         "https://api.x.com/2/oauth2/token",
         params,
@@ -139,10 +141,11 @@ const getOAuth2Token = async () => {
             },
         }
     );
-    console.log("[oauth2] token obtained");
+    console.log("[oauth2] token response:", JSON.stringify(res.data));
 
     // 新しいリフレッシュトークンをSupabaseに保存
     if (res.data.refresh_token) {
+        console.log("[oauth2] new refresh_token:", res.data.refresh_token);
         const { error: updateErr } = await supabase
             .from("x_tokens")
             .update({ refresh_token: res.data.refresh_token, updated_at: new Date().toISOString() })
@@ -156,9 +159,11 @@ const getOAuth2Token = async () => {
 
 export const tweetWithOAuth2 = async (text) => {
     const token = await getOAuth2Token();
+    const body = { text };
+    console.log("[oauth2] tweet request body:", JSON.stringify(body));
     const res = await axios.post(
         "https://api.x.com/2/tweets",
-        { text },
+        body,
         {
             headers: {
                 "Content-Type": "application/json",
@@ -166,7 +171,7 @@ export const tweetWithOAuth2 = async (text) => {
             },
         }
     );
-    console.log("[oauth2] tweet id:", res.data.data.id);
+    console.log("[oauth2] tweet response:", JSON.stringify(res.data));
     return res.data;
 };
 
@@ -180,18 +185,21 @@ export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet, mediaIds) =
     if (mediaIds && mediaIds.length > 0) {
         firstBody.media = { media_ids: mediaIds };
     }
+    console.log("[oauth2] first tweet request:", JSON.stringify(firstBody));
     const first = await axios.post(
         "https://api.x.com/2/tweets",
         firstBody,
         { headers }
     );
-    console.log("[oauth2] tweet id:", first.data.data.id);
+    console.log("[oauth2] first tweet response:", JSON.stringify(first.data));
+    const secondBody = { text: secondTweet, reply: { in_reply_to_tweet_id: first.data.data.id } };
+    console.log("[oauth2] second tweet request:", JSON.stringify(secondBody));
     const second = await axios.post(
         "https://api.x.com/2/tweets",
-        { text: secondTweet, reply: { in_reply_to_tweet_id: first.data.data.id } },
+        secondBody,
         { headers }
     );
-    console.log("[oauth2] reply tweet id:", second.data.data.id);
+    console.log("[oauth2] second tweet response:", JSON.stringify(second.data));
     return { first: first.data, second: second.data };
 };
 
