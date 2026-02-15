@@ -1,4 +1,4 @@
-import { client, axios, callOpenAI, tweetThreadWithBearer } from "./_common.js";
+import { client, axios, callOpenAI, tweetThreadWithOAuth2 } from "./_common.js";
 
 const OPENAI_USER_PROMPT = (itemName, catchcopy, rankingText) =>
     `以下の商品情報をもとに、` +
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
                 var secondTweet = tweetText.substring(0, 90) + " " + affiliateUrl + " #楽天ROOM #楽天 #楽天市場 #ad #PR";
                 console.log("[rakuten][new] secondTweet:", secondTweet);
 
-                await tweetThreadWithBearer(firstTweet, secondTweet);
+                await tweetThreadWithOAuth2(firstTweet, secondTweet);
                 console.log("[rakuten][new] thread posted successfully");
             } else {
                 // --- 旧方式: 従来通り単発投稿 ---

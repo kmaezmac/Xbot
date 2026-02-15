@@ -92,31 +92,31 @@ export const tweetThread = async (firstTweet, secondTweet) => {
 };
 
 /**
- * Bearer Token を使って X API v2 でツイートする
+ * OAuth 2.0 User Context を使って X API v2 でツイートする
  */
-const bearerHeaders = {
+const oauthHeaders = {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${process.env.X_BEARER_TOKEN}`,
 };
 
-export const tweetWithBearer = async (text) => {
+export const tweetWithOAuth2 = async (text) => {
     const res = await axios.post(
         "https://api.x.com/2/tweets",
         { text },
-        { headers: bearerHeaders }
+        { headers: oauthHeaders }
     );
-    console.log("[bearer] tweet id:", res.data.data.id);
+    console.log("[oauth2] tweet id:", res.data.data.id);
     return res.data;
 };
 
-export const tweetThreadWithBearer = async (firstTweet, secondTweet) => {
-    const first = await tweetWithBearer(firstTweet);
+export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet) => {
+    const first = await tweetWithOAuth2(firstTweet);
     const res = await axios.post(
         "https://api.x.com/2/tweets",
         { text: secondTweet, reply: { in_reply_to_tweet_id: first.data.id } },
-        { headers: bearerHeaders }
+        { headers: oauthHeaders }
     );
-    console.log("[bearer] reply tweet id:", res.data.data.id);
+    console.log("[oauth2] reply tweet id:", res.data.data.id);
     return { first, second: res.data };
 };
 
