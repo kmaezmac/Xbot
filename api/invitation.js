@@ -53,7 +53,11 @@ export default async function handler(req, res) {
         console.log("[invitation] posted successfully");
         res.status(200).send('get');
     } catch (error) {
-        console.error("[invitation] error:", error.message);
+        console.error("[invitation] error name:", error.name);
+        console.error("[invitation] error message:", error.message);
+        console.error("[invitation] error status:", error.response?.status);
+        console.error("[invitation] error data:", JSON.stringify(error.response?.data));
+        console.error("[invitation] error stack:", error.stack);
         res.status(500).send('error');
     }
 }
