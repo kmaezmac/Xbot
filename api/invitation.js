@@ -1,4 +1,4 @@
-import { client } from "./_common.js";
+import { tweetWithOAuth2 } from "./_common.js";
 
 const emojis = [
     "😀","😆","🤣","😉","🥰","😍","🤩","😘","😚","😋",
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         const selected = generators[Math.floor(Math.random() * generators.length)];
         const tweet = selected();
         console.log("[invitation] selected:", selected.name, "tweet:", tweet);
-        await client.v2.tweet(tweet);
+        await tweetWithOAuth2(tweet);
         console.log("[invitation] posted successfully");
         res.status(200).send('get');
     } catch (error) {
