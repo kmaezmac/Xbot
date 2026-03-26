@@ -119,7 +119,7 @@ const getOAuth2Token = async () => {
     const { data: row, error: fetchErr } = await supabase
         .from("x_tokens")
         .select("refresh_token")
-        .eq("id", 1)
+        .eq("id", process.env.X_ACCOUNT_ID || 1)
         .single();
     if (fetchErr) throw new Error("[oauth2] supabase fetch error: " + fetchErr.message);
     console.log("[oauth2] refresh_token from supabase:", row.refresh_token);
@@ -149,7 +149,7 @@ const getOAuth2Token = async () => {
         const { error: updateErr } = await supabase
             .from("x_tokens")
             .update({ refresh_token: res.data.refresh_token, updated_at: new Date().toISOString() })
-            .eq("id", 1);
+            .eq("id", process.env.X_ACCOUNT_ID || 1);
         if (updateErr) console.error("[oauth2] supabase update error:", updateErr.message);
         else console.log("[oauth2] new refresh_token saved to supabase");
     }
