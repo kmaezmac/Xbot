@@ -8,18 +8,21 @@ const supabase = createClient(
     process.env.SUPABASE_ANON_KEY
 );
 
-export const appKey = process.env.TWITTER_API_KEY;
-export const appSecret = process.env.TWITTER_API_SECRET;
-export const accessToken = process.env.TWITTER_ACCESS_TOKEN;
-export const accessSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET;
-
-export const client = new TwitterApi({
-    appKey,
-    appSecret,
-    accessToken,
-    accessSecret,
+let _client = null;
+export const client = new Proxy({}, {
+    get(_, prop) {
+        if (!_client) {
+            _client = new TwitterApi({
+                appKey: process.env.TWITTER_API_KEY,
+                appSecret: process.env.TWITTER_API_SECRET,
+                accessToken: process.env.TWITTER_ACCESS_TOKEN,
+                accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+            });
+            _client = _client.readWrite;
+        }
+        return _client[prop];
+    }
 });
-client.readWrite;
 
 export const execute = async (url) => {
     return new Promise((resolve, reject) => {
