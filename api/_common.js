@@ -102,15 +102,33 @@ export const tweetThread = async (firstTweet, secondTweet) => {
 
 /**
  * 画像URLからダウンロードしてX APIにアップロードし、media_idを返す
- * メディアアップロードはv1.1 (OAuth 1.0a) を使用
+ * token指定時はOAuth 2.0 (v1.1 base64アップロード)、なければ旧OAuth 1.0a
  */
-export const uploadImageFromUrl = async (imageUrl) => {
+export const uploadImageFromUrl = async (imageUrl, token = null) => {
     const imgRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
     const buffer = Buffer.from(imgRes.data);
     console.log("[media] downloaded image, size:", buffer.length);
-    const mediaId = await client.v1.uploadMedia(buffer, { mimeType: "image/jpeg" });
-    console.log("[media] uploaded, media_id:", mediaId);
-    return mediaId;
+    if (token) {
+        const base64 = buffer.toString("base64");
+        const params = new URLSearchParams();
+        params.append("media_data", base64);
+        const uploadRes = await axios.post(
+            "https://upload.twitter.com/1.1/media/upload.json",
+            params,
+            {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Authorization": `Bearer ${token}`,
+                },
+            }
+        );
+        console.log("[media] oauth2 upload response:", JSON.stringify(uploadRes.data));
+        return uploadRes.data.media_id_string;
+    } else {
+        const mediaId = await client.v1.uploadMedia(buffer, { mimeType: "image/jpeg" });
+        console.log("[media] legacy upload, media_id:", mediaId);
+        return mediaId;
+    }
 };
 
 /**
@@ -178,14 +196,27 @@ export const tweetWithOAuth2 = async (text) => {
     return res.data;
 };
 
-export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet, mediaIds) => {
+// imageUrls: 画像URLの配列。token取得後にOAuth2でアップロードする
+export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet, imageUrls = []) => {
     const token = await getOAuth2Token();
     const headers = {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
     };
+
+    // 画像アップロード（OAuth2トークンを使い回し）
+    const mediaIds = [];
+    for (const url of imageUrls) {
+        try {
+            const id = await uploadImageFromUrl(url, token);
+            mediaIds.push(id);
+        } catch (e) {
+            console.error("[media] upload failed, skip:", e.message, e.response?.data);
+        }
+    }
+
     const firstBody = { text: firstTweet };
-    if (mediaIds && mediaIds.length > 0) {
+    if (mediaIds.length > 0) {
         firstBody.media = { media_ids: mediaIds };
     }
     console.log("[oauth2] first tweet request:", JSON.stringify(firstBody));
