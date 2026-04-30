@@ -102,33 +102,15 @@ export const tweetThread = async (firstTweet, secondTweet) => {
 
 /**
  * 画像URLからダウンロードしてX APIにアップロードし、media_idを返す
- * token指定時はOAuth 2.0 (v1.1 base64アップロード)、なければ旧OAuth 1.0a
+ * メディアアップロードはv1.1 OAuth 1.0aが必要（OAuth 2.0では403になる）
  */
-export const uploadImageFromUrl = async (imageUrl, token = null) => {
+export const uploadImageFromUrl = async (imageUrl) => {
     const imgRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
     const buffer = Buffer.from(imgRes.data);
     console.log("[media] downloaded image, size:", buffer.length);
-    if (token) {
-        const base64 = buffer.toString("base64");
-        const params = new URLSearchParams();
-        params.append("media_data", base64);
-        const uploadRes = await axios.post(
-            "https://upload.twitter.com/1.1/media/upload.json",
-            params,
-            {
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Authorization": `Bearer ${token}`,
-                },
-            }
-        );
-        console.log("[media] oauth2 upload response:", JSON.stringify(uploadRes.data));
-        return uploadRes.data.media_id_string;
-    } else {
-        const mediaId = await client.v1.uploadMedia(buffer, { mimeType: "image/jpeg" });
-        console.log("[media] legacy upload, media_id:", mediaId);
-        return mediaId;
-    }
+    const mediaId = await client.v1.uploadMedia(buffer, { mimeType: "image/jpeg" });
+    console.log("[media] uploaded, media_id:", mediaId);
+    return mediaId;
 };
 
 /**
@@ -204,14 +186,14 @@ export const tweetThreadWithOAuth2 = async (firstTweet, secondTweet, imageUrls =
         "Authorization": `Bearer ${token}`,
     };
 
-    // 画像アップロード（OAuth2トークンを使い回し）
+    // 画像アップロード（メディアアップロードはv1.1 OAuth 1.0aが必要）
     const mediaIds = [];
     for (const url of imageUrls) {
         try {
-            const id = await uploadImageFromUrl(url, token);
+            const id = await uploadImageFromUrl(url);
             mediaIds.push(id);
         } catch (e) {
-            console.error("[media] upload failed, skip:", e.message, e.response?.data);
+            console.error("[media] upload failed, skip:", e.message, JSON.stringify(e.response?.data));
         }
     }
 
